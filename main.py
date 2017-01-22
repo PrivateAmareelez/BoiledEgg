@@ -1,22 +1,35 @@
+import os
+
 import numpy as np
 import statsmodels.api as sm
 
-y = [1, 2, 3, 4, 3, 4, 5, 4, 5, 5, 4, 5, 4, 5, 4, 5, 6, 5, 4, 5, 4, 3, 4]
-
-x = [
-    [4, 2, 3, 4, 5, 4, 5, 6, 7, 4, 8, 9, 8, 8, 6, 6, 5, 5, 5, 5, 5, 5, 5],
-    [4, 1, 2, 3, 4, 5, 6, 7, 5, 8, 7, 8, 7, 8, 7, 8, 7, 7, 7, 7, 7, 6, 5],
-    [4, 1, 2, 5, 6, 7, 8, 9, 7, 8, 7, 8, 7, 7, 7, 7, 7, 7, 6, 6, 4, 4, 4]
-]
+rawData = {}
 
 
-def reg_m(y, x):
-    ones = np.ones(len(x[0]))
-    X = sm.add_constant(np.column_stack((x[0], ones)))
-    for ele in x[1:]:
-        X = sm.add_constant(np.column_stack((ele, X)))
-    results = sm.OLS(y, X).fit()
-    return results
+def loadData():
+    for file in os.listdir("./data"):
+        if file.endswith(".txt"):
+            f = open("data/" + file)
+            for line in f.readlines():
+                values = map(float, line.split("\t"))
+                if rawData.has_key(values[0]):
+                    rawData[values[0]].append(values[1])
+                else:
+                    rawData[values[0]] = [values[1]]
 
 
-print reg_m(y, x).summary()
+def prepareData(data):
+    y = []
+    x = []
+    for key in data:
+        if len(data[key]) == 4:
+            y.append(key)
+            x.append(data[key])
+    return [y, np.column_stack((np.row_stack(x), np.ones(len(x))))]
+
+
+loadData()
+data = prepareData(rawData)
+
+res = sm.OLS(data[0], data[1]).fit()
+print res.summary()
